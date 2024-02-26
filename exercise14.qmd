@@ -1,0 +1,12 @@
+---
+title: "Homework Assignment 6"
+author: "Vincent Xie"
+toc: true
+number-sections: true
+highlight-style: pygments
+format: 
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
+---
