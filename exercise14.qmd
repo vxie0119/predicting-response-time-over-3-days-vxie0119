@@ -99,8 +99,10 @@ log_model = make_pipeline(imputer, LogisticRegression())
 # Split data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-log_model.fit(X_train, y_train)
+# Fit the model
+print(log_model.fit(X_train, y_train))
 
+# Make predictions and print the classification report
 y_pred = log_model.predict(X_test)
 print(classification_report(y_test, y_pred))
 ```
@@ -119,7 +121,7 @@ lasso_log_model = make_pipeline(imputer, LogisticRegressionCV(cv=5, penalty='l1'
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # Fit the Lasso Logistic model
-lasso_log_model.fit(X_train, y_train)
+print(lasso_log_model.fit(X_train, y_train))
 
 # Make predictions and print the classification report
 y_pred_lasso = lasso_log_model.predict(X_test)
