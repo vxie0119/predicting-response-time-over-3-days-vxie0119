@@ -85,7 +85,11 @@ from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.metrics import classification_report
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import make_pipeline
+import warnings
+from sklearn.exceptions import UndefinedMetricWarning
 
+# Suppress only the UndefinedMetricWarning
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 X = data[['median_house_income', 'median_home_value']] 
 y = data['over3d']
@@ -100,11 +104,38 @@ log_model = make_pipeline(imputer, LogisticRegression())
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # Fit the model
-print(log_model.fit(X_train, y_train))
+log_model.fit(X_train, y_train)
 
 # Make predictions and print the classification report
 y_pred = log_model.predict(X_test)
 print(classification_report(y_test, y_pred))
+```
+```{python}
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve
+import matplotlib.pyplot as plt
+
+# Predictions
+y_pred_proba = log_model.predict_proba(X_test)[:, 1]
+
+# Accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+# Classification Report
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("\nConfusion Matrix:\n", conf_matrix)
+
+# ROC Curve and AUC
+fpr, tpr, _ = roc_curve(y_test,  y_pred_proba)
+auc = roc_auc_score(y_test, y_pred_proba)
+plt.plot(fpr, tpr, label="AUC="+str(auc))
+plt.ylabel('True Positive Rate')
+plt.xlabel('False Positive Rate')
+plt.legend(loc=4)
+plt.show()
 ```
 
 5. **Build a lasso logistic model to predict `over3d`, and justify**
@@ -121,9 +152,33 @@ lasso_log_model = make_pipeline(imputer, LogisticRegressionCV(cv=5, penalty='l1'
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # Fit the Lasso Logistic model
-print(lasso_log_model.fit(X_train, y_train))
+lasso_log_model.fit(X_train, y_train)
 
 # Make predictions and print the classification report
 y_pred_lasso = lasso_log_model.predict(X_test)
 print(classification_report(y_test, y_pred_lasso))
+```
+```{python}
+# Using the Lasso Logistic Model for predictions
+y_pred_proba_lasso = lasso_log_model.predict_proba(X_test)[:, 1]
+
+# Accuracy
+accuracy_lasso = accuracy_score(y_test, y_pred_lasso)
+print("Accuracy (Lasso):", accuracy_lasso)
+
+# Classification Report
+print("\nClassification Report (Lasso):\n", classification_report(y_test, y_pred_lasso))
+
+# Confusion Matrix
+conf_matrix_lasso = confusion_matrix(y_test, y_pred_lasso)
+print("\nConfusion Matrix (Lasso):\n", conf_matrix_lasso)
+
+# ROC Curve and AUC
+fpr_lasso, tpr_lasso, _ = roc_curve(y_test, y_pred_proba_lasso)
+auc_lasso = roc_auc_score(y_test, y_pred_proba_lasso)
+plt.plot(fpr_lasso, tpr_lasso, label="AUC (Lasso)="+str(auc_lasso))
+plt.ylabel('True Positive Rate')
+plt.xlabel('False Positive Rate')
+plt.legend(loc=4)
+plt.show()
 ```
