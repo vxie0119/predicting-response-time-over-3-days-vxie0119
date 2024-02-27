@@ -133,6 +133,13 @@ plt.legend(loc=4)
 plt.show()
 ```
 
+**Analysis:** 
+
+- 86% of the predictions match the true label.
+- In the classification report, the positive class has 0 for both precision and recall. This indicates that the model did not correctly identify any positive instances.
+- Confusion matrix: 13,766 true negatives and 2,251 false negatives.
+- AUC = 0.53 which is only slightly better than 0.5. The model does not have a good discriminative ability between positive and negative classes.
+
 5. **Build a lasso logistic model to predict `over3d`, and justify**
    **your choice of the tuning parameter. Validate on the testing data.**
 
@@ -174,3 +181,11 @@ plt.xlabel('False Positive Rate')
 plt.legend(loc=4)
 plt.show()
 ```
+
+**Analysis:** 
+
+- 86% of the predictions match the true label so it is good at predicting the negative class
+- In the classification report, the positive class has 0 for both precision and recall. This indicates that the model did not correctly identify any positive instances.
+- Confusion matrix: 13,766 true negatives and 2,251 false negatives.
+- There are no true positives and false positives.
+- AUC = 0.44 which is less than 0.5. This suggests that the model is no better than random guessing.
