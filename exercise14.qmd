@@ -17,20 +17,83 @@ The response time to 311 service requests is a measure of civic
 service quality. Let us model the response time to 311 requests
 with complain type `Rodent`.
 
+**Data Initialization**
+```{python}
+import pandas as pd
+import pyarrow.feather as feather
+
+file_path = 'data/rodent_2022-2023.csv'
+data = pd.read_csv(file_path)
+
+for column in data.columns:
+    print(column)
+```
+
 1. Compute the response time in hours. Note that some response
    will be missing because of unavailable closed date.
+
+```{python}
+from datetime import datetime
+
+data['Created Date'] = pd.to_datetime(data['Created Date'])
+data['Closed Date'] = pd.to_datetime(data['Closed Date'])
+data['Response Time'] = (data['Closed Date'] - data['Created Date']).dt.total_seconds() / 3600
+```
 
 2. Compute a binary variable `over3d`, which is one if the
    response time is greater than 3 days, and zero otherwise. Note
     that this variable should have no missing values.
 
+```{python}
+# Create the binary variable 'over3d'
+data['over3d'] = (data['Response Time'] > 72).astype(int)
+
+```
+
 3. Use the package `uszipcode` to obtain the zip code level
    covaraites such as median house income and median home value.
    Merge these variables to the rodent data.
+   - can we engineer variables that are informative
+
+```{python}
+from uszipcode import SearchEngine
+
+search = SearchEngine(simple_zipcode=True)
+def get_zipcode_data(zip_code):
+    zipcode = search.by_zipcode(zip_code)
+    return pd.Series([zipcode.median_household_income, zipcode.median_home_value],
+                     index=['median_house_income', 'median_home_value'])
+
+rodent_data[['median_house_income', 'median_home_value']] = rodent_data['Incident Zip'].apply(get_zipcode_data)
+```
 
 4. Split the data at random into training (80%) and testing (20%).
    Build a logistic model to predict `over3d` on the training data,
    and validate the performance on the testing data.
 
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
+from sklearn.metrics import classification_report
+
+X = rodent_data[['median_house_income', 'median_home_value']] 
+y = rodent_data['over3d']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+log_model = LogisticRegression()
+log_model.fit(X_train, y_train)
+
+y_pred = log_model.predict(X_test)
+print(classification_report(y_test, y_pred))
+```
+
 5. Build a lasso logistic model to predict `over3d`, and justify
    your choice of the tuning parameter. Validate on the testing data.
+
+```{python}
+lasso_log_model = LogisticRegressionCV(cv=5, penalty='l1', solver='saga', max_iter=1000, random_state=0)
+lasso_log_model.fit(X_train, y_train)
+
+y_pred_lasso = lasso_log_model.predict(X_test)
+print(classification_report(y_test, y_pred_lasso))
+```
