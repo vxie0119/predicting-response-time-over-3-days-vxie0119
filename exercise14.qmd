@@ -62,7 +62,7 @@ from uszipcode import SearchEngine
 # Initialize SearchEngine
 search = SearchEngine()
 
-def get_zipcode_data(zip_code):
+def zipcode_data(zip_code):
     zipcode = search.by_zipcode(zip_code)
     if zipcode:
         return pd.Series([zipcode.median_household_income, zipcode.median_home_value],
@@ -71,8 +71,7 @@ def get_zipcode_data(zip_code):
         return pd.Series([None, None], index=['median_house_income', 'median_home_value'])
 
 # Apply function to data
-data[['median_house_income', 'median_home_value']] = data['Incident Zip'].
-                                                     apply(get_zipcode_data)
+data[['median_house_income', 'median_home_value']] = data['Incident Zip'].apply(zipcode_data)
 ```
 
 4. **Split the data at random into training (80%) and testing (20%).**
