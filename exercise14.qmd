@@ -24,43 +24,43 @@ import pyarrow.feather as feather
 
 file_path = 'data/rodent_2022-2023.csv'
 data = pd.read_csv(file_path)
-
-for column in data.columns:
-    print(column)
 ```
 
-1. Compute the response time in hours. Note that some response
-   will be missing because of unavailable closed date.
+1. **Compute the response time in hours. Note that some response**
+   **will be missing because of unavailable closed date.**
 
 ```{python}
 from datetime import datetime
 
+# Convert to datetime   
 data['Created Date'] = pd.to_datetime(data['Created Date'])
 data['Closed Date'] = pd.to_datetime(data['Closed Date'])
 
 # Filter out records where 'Closed Date' is missing
 data = data[data['Closed Date'].notna()]
 
+# Calculate Response Time
 data['Response Time'] = (data['Closed Date'] - data['Created Date']).dt.total_seconds() / 3600
+print(data['Response Time'].head())
 ```
 
-2. Compute a binary variable `over3d`, which is one if the
-   response time is greater than 3 days, and zero otherwise. Note
-    that this variable should have no missing values.
+2. **Compute a binary variable `over3d`, which is one if the**
+   **response time is greater than 3 days, and zero otherwise. Note**
+   **that this variable should have no missing values.**
 
 ```{python}
 # Create the binary variable 'over3d'
 data['over3d'] = (data['Response Time'] > 72).astype(int)
 ```
 
-3. Use the package `uszipcode` to obtain the zip code level
-   covaraites such as median house income and median home value.
-   Merge these variables to the rodent data.
-   - can we engineer variables that are informative
+3. **Use the package `uszipcode` to obtain the zip code level**
+   **covaraites such as median house income and median home value.**
+   **Merge these variables to the rodent data.**
 
 ```{python}
 from uszipcode import SearchEngine
 
+# Initialize SearchEngine
 search = SearchEngine()
 
 def get_zipcode_data(zip_code):
@@ -71,36 +71,57 @@ def get_zipcode_data(zip_code):
     else:
         return pd.Series([None, None], index=['median_house_income', 'median_home_value'])
 
+# Apply function to data
 data[['median_house_income', 'median_home_value']] = data['Incident Zip'].apply(get_zipcode_data)
 ```
 
-4. Split the data at random into training (80%) and testing (20%).
-   Build a logistic model to predict `over3d` on the training data,
-   and validate the performance on the testing data.
+4. **Split the data at random into training (80%) and testing (20%).**
+   **Build a logistic model to predict `over3d` on the training data,**
+   **and validate the performance on the testing data.**
 
 ```{python}
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.metrics import classification_report
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import make_pipeline
+
 
 X = data[['median_house_income', 'median_home_value']] 
 y = data['over3d']
+
+# Impute missing values with median
+imputer = SimpleImputer(strategy='median')
+
+# Create a pipeline with imputation and logistic regression
+log_model = make_pipeline(imputer, LogisticRegression())
+
+# Split data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-log_model = LogisticRegression()
 log_model.fit(X_train, y_train)
 
 y_pred = log_model.predict(X_test)
 print(classification_report(y_test, y_pred))
 ```
 
-5. Build a lasso logistic model to predict `over3d`, and justify
-   your choice of the tuning parameter. Validate on the testing data.
+5. **Build a lasso logistic model to predict `over3d`, and justify**
+   **your choice of the tuning parameter. Validate on the testing data.**
 
 ```{python}
-lasso_log_model = LogisticRegressionCV(cv=5, penalty='l1', solver='saga', max_iter=1000, random_state=0)
+# Impute missing values with median
+imputer = SimpleImputer(strategy='median')
+
+# Create a pipeline with imputation and Lasso Logistic Regression
+lasso_log_model = make_pipeline(imputer, LogisticRegressionCV(cv=5, penalty='l1', solver='saga', max_iter=1000, random_state=0))
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# Fit the Lasso Logistic model
 lasso_log_model.fit(X_train, y_train)
 
+# Make predictions and print the classification report
 y_pred_lasso = lasso_log_model.predict(X_test)
 print(classification_report(y_test, y_pred_lasso))
 ```
