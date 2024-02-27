@@ -37,6 +37,10 @@ from datetime import datetime
 
 data['Created Date'] = pd.to_datetime(data['Created Date'])
 data['Closed Date'] = pd.to_datetime(data['Closed Date'])
+
+# Filter out records where 'Closed Date' is missing
+data = data[data['Closed Date'].notna()]
+
 data['Response Time'] = (data['Closed Date'] - data['Created Date']).dt.total_seconds() / 3600
 ```
 
@@ -47,7 +51,6 @@ data['Response Time'] = (data['Closed Date'] - data['Created Date']).dt.total_se
 ```{python}
 # Create the binary variable 'over3d'
 data['over3d'] = (data['Response Time'] > 72).astype(int)
-
 ```
 
 3. Use the package `uszipcode` to obtain the zip code level
@@ -58,13 +61,17 @@ data['over3d'] = (data['Response Time'] > 72).astype(int)
 ```{python}
 from uszipcode import SearchEngine
 
-search = SearchEngine(simple_zipcode=True)
+search = SearchEngine()
+
 def get_zipcode_data(zip_code):
     zipcode = search.by_zipcode(zip_code)
-    return pd.Series([zipcode.median_household_income, zipcode.median_home_value],
-                     index=['median_house_income', 'median_home_value'])
+    if zipcode:
+        return pd.Series([zipcode.median_household_income, zipcode.median_home_value],
+                         index=['median_house_income', 'median_home_value'])
+    else:
+        return pd.Series([None, None], index=['median_house_income', 'median_home_value'])
 
-rodent_data[['median_house_income', 'median_home_value']] = rodent_data['Incident Zip'].apply(get_zipcode_data)
+data[['median_house_income', 'median_home_value']] = data['Incident Zip'].apply(get_zipcode_data)
 ```
 
 4. Split the data at random into training (80%) and testing (20%).
@@ -76,8 +83,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.metrics import classification_report
 
-X = rodent_data[['median_house_income', 'median_home_value']] 
-y = rodent_data['over3d']
+X = data[['median_house_income', 'median_home_value']] 
+y = data['over3d']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 log_model = LogisticRegression()
